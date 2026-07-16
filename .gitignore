@@ -1,0 +1,8 @@
+build/
+install/
+log/
+logs/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store

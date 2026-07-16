@@ -1,0 +1,9 @@
+# Unity generated dirs (per-machine, never commit)
+SparSim/Library/
+SparSim/Logs/
+SparSim/obj/
+SparSim/Temp/
+SparSim/UserSettings/
+# IDE integration files Unity regenerates on open
+SparSim/*.csproj
+SparSim/*.sln

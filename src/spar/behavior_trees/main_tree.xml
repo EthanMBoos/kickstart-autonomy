@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!--
+  The tree, as built in bt_executive.cpp's factory registration:
+
+    ReactiveFallback (root)
+    ├── ReactiveSequence (mission_gate)
+    │   ├── MissionActive?
+    │   └── ReactiveFallback (on_mission)
+    │       ├── ReactiveSequence (battery_concern)
+    │       │   ├── BatteryLow?
+    │       │   └── ReactiveFallback (get_safe)
+    │       │       ├── ReturnToDock
+    │       │       └── HoldPosition
+    │       ├── ReactiveSequence (inspect)
+    │       │   ├── AnomalySeen?
+    │       │   └── Inspect
+    │       ├── Rounds
+    │       └── HoldPosition
+    └── Idle
+
+  Every composite here is Reactive: a plain Sequence/Fallback remembers
+  which child was last RUNNING and resumes from there, so a higher-priority
+  condition earlier in the list would stop being re-checked once a
+  lower-priority child settled in (proven: HoldPosition would get stuck
+  forever, and mission/command start would stop working once Idle took
+  over). ReactiveSequence/ReactiveFallback re-tick every child from the top
+  every cycle, which is what keeps the tree reactive.
+
+  No ports here: all tuning (waypoints, dock pose, thresholds, cooldowns)
+  is injected at registration time from ROS params, not XML attributes, so
+  a tunable lives in exactly one file (config/autonomy_<world>.yaml).
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <ReactiveFallback name="root">
+      <ReactiveSequence name="mission_gate">
+        <MissionActive/>
+        <ReactiveFallback name="on_mission">
+          <ReactiveSequence name="battery_concern">
+            <BatteryLow/>
+            <ReactiveFallback name="get_safe">
+              <ReturnToDock/>
+              <HoldPosition/>
+            </ReactiveFallback>
+          </ReactiveSequence>
+          <ReactiveSequence name="inspect">
+            <AnomalySeen/>
+            <Inspect/>
+          </ReactiveSequence>
+          <Rounds/>
+          <HoldPosition/>
+        </ReactiveFallback>
+      </ReactiveSequence>
+      <Idle/>
+    </ReactiveFallback>
+  </BehaviorTree>
+</root>

@@ -1,0 +1,64 @@
+# Behavior-layer configuration. Waypoints and the dock are in the map frame
+# of the world; the dock sits at the robot's spawn point so
+# "return to dock" is always reachable.
+/**/bt_executive:
+  ros__parameters:
+    tick_rate_hz: 10.0
+    goal_frame: map
+    cmd_vel_topic: cmd_vel
+    # The rounds (checkpoints, map frame). Long legs on purpose: at 1.5 m/s
+    # the robot needs runway to actually reach cruise speed. Tune per world.
+    waypoints_x: [7.0, 7.0, -7.0, -7.0]
+    waypoints_y: [2.5, -2.5, -2.5, 2.5]
+    waypoints_yaw: [0.0, -1.57, 3.14, 1.57]
+    # The dock (also where the robot spawns).
+    dock_x: 0.0
+    dock_y: 0.0
+    dock_yaw: 0.0
+    # Battery policy: bail out at 30%, resume the rounds at 90%, and treat a
+    # reading older than 2s as low (freshness is part of the contract).
+    battery_low_percent: 30.0
+    battery_resume_percent: 90.0
+    battery_stale_sec: 2.0
+    nav_retry_cooldown_sec: 2.0
+    waypoint_max_retries: 3
+    base_frame: base_link
+    # Inspect: chase a fresh detection, then leave it alone for a while.
+    # The freshness window is generous so a few frames without a confident
+    # blob (the anomaly grazing the frame edge) don't end an inspection.
+    anomaly_stale_sec: 6.0
+    inspect_cooldown_sec: 45.0
+    # Generous: a tighter stand-off puts the nav goal inside the anomaly's
+    # costmap inflation and the controller stalls ("failed to make progress").
+    inspect_standoff_m: 1.8
+    # perception/detections may carry several kinds of hits; this is the
+    # one label AnomalySeen watches for.
+    anomaly_label: anomaly
+
+/**/anomaly_detector:
+  ros__parameters:
+    color_topic: sensors/camera_0/color/image
+    depth_topic: sensors/camera_0/depth/image
+    info_topic: sensors/camera_0/color/camera_info
+    map_frame: map
+    # The sim's image headers claim an optical frame that isn't in TF; this
+    # URDF frame is where the camera actually sits.
+    camera_frame: camera_0_link
+    min_blob_area_px: 400
+    max_range_m: 8.0
+    # Written into every Detection this node publishes; must match
+    # bt_executive's anomaly_label for AnomalySeen to see it.
+    label: anomaly
+
+/**/battery_sim:
+  ros__parameters:
+    initial_percent: 100.0
+    # ~140s of patrol before the fallback fires; ~14s at the dock to recover.
+    drain_rate_pct_per_s: 0.5
+    charge_rate_pct_per_s: 5.0
+    dock_x: 0.0
+    dock_y: 0.0
+    dock_radius: 1.5
+    map_frame: map
+    base_frame: base_link
+    publish_rate_hz: 2.0

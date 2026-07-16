@@ -1,0 +1,11 @@
+# Keep the build context tiny: the image only needs package manifests and
+# docker/ itself — the workspace is bind-mounted at runtime (compose.yaml).
+build/
+install/
+log/
+logs/
+.venv/
+.git/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,19 @@
+{
+  "name": "SparRos",
+  "rootNamespace": "",
+  "references": [
+    "Mujoco.Runtime",
+    "Unity.Robotics.ROSTCPConnector",
+    "Unity.Robotics.ROSTCPConnector.Messages",
+    "Unity.Robotics.ROSTCPConnector.MessageGeneration"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": true,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

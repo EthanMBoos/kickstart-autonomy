@@ -1,0 +1,30 @@
+services:
+  autonomy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: spar:jazzy
+    container_name: spar
+    # Nothing launches automatically, see docker/entrypoint.sh. The
+    # container just needs a long-lived foreground process to stay up for
+    # `make ros2_container`/`make shell` to exec into; sleep infinity is that process.
+    command: sleep infinity
+    environment:
+      - WORLD=${WORLD:-blank}
+    # The workspace lives on the host; the image is just the environment.
+    # build/ + install/ are written by colcon in the container, run by hand
+    # (see README); logs/ gets one runNNN per launch.
+    volumes:
+      - ../src:/ws/src
+      - ../scripts:/ws/scripts
+      - ../build:/ws/build
+      - ../install:/ws/install
+      - ../logs:/ws/logs
+    ports:
+      - "10000:10000"         # ROS-TCP-Endpoint — the Unity sim connects here
+      - "127.0.0.1:6080:6080" # noVNC — loopback only, it's an unauthenticated
+                              # remote desktop (Xvnc -SecurityTypes None)
+    init: true # reaps zombies from `make rviz`'s Xvnc/rviz2/websockify trio;
+               # PID 1 here is `sleep infinity`, which never reaps on its own
+    stop_grace_period: 10s
+    tty: true
