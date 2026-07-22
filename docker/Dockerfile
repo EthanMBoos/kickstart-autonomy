@@ -36,19 +36,18 @@ WORKDIR /ws
 # rosdep to install dependencies. The actual colcon build is run by hand,
 # in the container, and lands in ./build on the host (see README), so code
 # edits need an incremental rebuild, never an image rebuild.
-COPY src/spar/package.xml src/spar/
-COPY src/spar_bringup/package.xml src/spar_bringup/
-COPY src/ros_tcp_endpoint/package.xml src/ros_tcp_endpoint/
+COPY ground/src/spar_ground/package.xml src/spar_ground/
+COPY ground/src/spar_bringup/package.xml src/spar_bringup/
+COPY third_party/ros_tcp_endpoint/package.xml src/ros_tcp_endpoint/
 RUN . /opt/ros/jazzy/setup.sh \
  && apt-get update && rosdep update --rosdistro jazzy \
  && rosdep install --from-paths src --ignore-src -y --rosdistro jazzy \
  && rm -rf /var/lib/apt/lists/*
 
 # The core service (see compose.yaml) runs the ROS-TCP endpoint before any
-# student build exists, so that one package is also baked into the image at
-# /opt/spar_core. The bind-mounted src/ros_tcp_endpoint still builds into
-# the student workspace like everything else; core just never uses that copy.
-COPY src/ros_tcp_endpoint /opt/spar_core/src/ros_tcp_endpoint
+# student build exists, so it is vendored in third_party (never part of the
+# student workspace) and baked into the image at /opt/spar_core.
+COPY third_party/ros_tcp_endpoint /opt/spar_core/src/ros_tcp_endpoint
 RUN . /opt/ros/jazzy/setup.sh \
  && cd /opt/spar_core && colcon build
 

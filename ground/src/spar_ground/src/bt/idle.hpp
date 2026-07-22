@@ -4,7 +4,7 @@
 
 #include <behaviortree_cpp/action_node.h>
 
-namespace spar {
+namespace spar_ground {
 
 // The do-nothing leaf at the very bottom of the tree: no goals, no
 // commands, just RUNNING. With every Nav2 goal already cancelled by
@@ -25,4 +25,4 @@ public:
   void onHalted() override {}
 };
 
-}  // namespace spar
+}  // namespace spar_ground

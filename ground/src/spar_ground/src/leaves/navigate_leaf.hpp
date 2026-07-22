@@ -16,7 +16,7 @@
 
 #include <behaviortree_cpp/action_node.h>
 
-namespace spar {
+namespace spar_ground {
 
 // Base for every leaf that delegates motion to Nav2 (the planner/controller
 // for this stack). The one rule that keeps the tree reactive: onStart()/
@@ -155,4 +155,4 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
 };
 
-}  // namespace spar
+}  // namespace spar_ground

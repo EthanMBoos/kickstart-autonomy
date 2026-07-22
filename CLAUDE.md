@@ -11,7 +11,7 @@ weekend, not to be a product.
 The shape: MuJoCo physics runs inside Unity (the plugin); one C# sensor
 layer (`unity/SparSim/Assets/Scripts/SparRos/`) publishes ROS
 topics over TCP to a Docker container running Nav2, AMCL, and the behavior
-tree (`src/spar/`). The Unity scene is the world; MJCF only
+tree (`ground/src/spar_ground/`). The Unity scene is the world; MJCF only
 flows out (`make map`). Design decisions and their reasons are in
 `docs/sim-architecture.md`.
 

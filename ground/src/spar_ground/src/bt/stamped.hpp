@@ -1,6 +1,6 @@
 #pragma once
 
-namespace spar {
+namespace spar_ground {
 
 // A blackboard value paired with the clock time it was written. BT.CPP's own
 // Blackboard has a native per-key timestamp too, but it stamps with
@@ -20,4 +20,4 @@ bool fresh(const Stamped<T>& s, double now, double max_age_sec) {
   return s.stamp >= 0.0 && now - s.stamp <= max_age_sec;
 }
 
-}  // namespace spar
+}  // namespace spar_ground

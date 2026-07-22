@@ -53,7 +53,7 @@ until it answers (up to ~60 s). If the container is down, start it directly
 (not `make ros2_container`, see the ground rule above):
 
 ```bash
-mkdir -p build install logs
+mkdir -p ground/build ground/install logs
 WORLD=blank docker compose -f docker/compose.yaml up --build -d
 ```
 
@@ -61,10 +61,10 @@ Nothing auto-launches, the container just idles (see docker/entrypoint.sh).
 Build the same way a user would, with colcon:
 
 ```bash
-docker exec spar bash -lc 'source /opt/ros/jazzy/setup.bash && cd /ws && colcon --log-base /ws/build/log build --packages-select spar --symlink-install'
+docker exec spar bash -lc 'source /opt/ros/jazzy/setup.bash && cd /ws && colcon --log-base /ws/build/log build --packages-select spar_ground --symlink-install'
 ```
 
-Success is `Finished <<< spar` and exit 0. Note the flag
+Success is `Finished <<< spar_ground` and exit 0. Note the flag
 order: `--log-base` must come BEFORE the `build`/`test` subcommand.
 
 ### 2. C++ unit tests (container)
@@ -75,7 +75,7 @@ tested upstream; these tests cover only the logic this repo still owns
 (staleness, hysteresis, cooldowns). Runs in under a second:
 
 ```bash
-docker exec spar bash -lc 'source /opt/ros/jazzy/setup.bash && cd /ws && colcon --log-base /ws/build/log test --packages-select spar && colcon --log-base /ws/build/log test-result --verbose'
+docker exec spar bash -lc 'source /opt/ros/jazzy/setup.bash && cd /ws && colcon --log-base /ws/build/log test --packages-select spar_ground && colcon --log-base /ws/build/log test-result --verbose'
 ```
 
 Success is `0 errors, 0 failures` in the summary line.
@@ -118,9 +118,9 @@ For verification without touching the repo, dump once (or reuse an existing
 `logs/blank.xml`) and run the scripts by hand into the scratchpad:
 
 ```bash
-.venv/bin/python scripts/lint_world.py logs/blank.xml src/spar_bringup/config/autonomy_blank.yaml
+.venv/bin/python scripts/lint_world.py logs/blank.xml ground/src/spar_bringup/config/autonomy_blank.yaml
 .venv/bin/python scripts/rasterize_map.py logs/blank.xml <scratchpad>/maps
-cmp src/spar_bringup/maps/blank.pgm <scratchpad>/maps/blank.pgm && echo byte-identical
+cmp ground/src/spar_bringup/maps/blank.pgm <scratchpad>/maps/blank.pgm && echo byte-identical
 ```
 
 For script-only changes, byte-identical output on the blank world is the
@@ -158,7 +158,7 @@ sleep 25 && grep -m1 "bridge ids ok" logs/unity-headless.log   # retry until it 
 grep -m1 "camera sensor mounted" logs/unity-headless.log
 
 make shut_down    # clean slate, whatever was running before
-mkdir -p build install logs
+mkdir -p ground/build ground/install logs
 WORLD=blank docker compose -f docker/compose.yaml up --build -d # nothing builds or launches yet (never `make ros2_container`, see ground rules)
 docker exec spar bash -lc 'source /opt/ros/jazzy/setup.bash && cd /ws && colcon --log-base /ws/build/log build --symlink-install'
 docker exec -d spar bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 launch spar_bringup autonomy.launch.py world:=blank'
@@ -175,7 +175,7 @@ names the step; the per-run logs are in the newest `logs/runNNN/`.
 
 ### 6. rviz visual check (screenshot)
 
-Required after changes to `src/spar_bringup/rviz/spar.rviz` or
+Required after changes to `ground/src/spar_bringup/rviz/spar.rviz` or
 `scripts/rviz.sh`; worth running after any perception/TF/costmap change too,
 since checks 1-5 confirm the topics and logs are right but not that the
 picture is. Needs check 5's stack up first (`ros2 launch` and Unity both
@@ -233,7 +233,7 @@ rewind under it).
 make unity-stop && make unity-headless
 # wait for "px4 link ids ok" (and "bridge ids ok") in logs/unity-headless.log
 make shut_down
-mkdir -p build install logs air/src air/build air/install logs/air
+mkdir -p ground/build ground/install logs air/src air/build air/install logs/air
 WORLD=blank docker compose -f docker/compose.yaml --profile air up --build -d
 docker exec spar-air bash -lc 'source /ws/scripts/env.sh && cd /ws && colcon --log-base /ws/build/log build --symlink-install'
 docker exec -d spar-air bash -c 'cd /opt/px4/build/px4_sitl_zenoh && PX4_SYS_AUTOSTART=10016 PX4_SIM_MODEL=none_iris PX4_SIM_HOSTNAME=host.docker.internal ./bin/px4 -d > /tmp/px4.log 2>&1'

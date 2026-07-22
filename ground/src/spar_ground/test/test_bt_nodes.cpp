@@ -6,7 +6,7 @@
 #include "bt/battery_low.hpp"
 #include "bt/stamped.hpp"
 
-namespace spar {
+namespace spar_ground {
 namespace {
 
 TEST(Stamped, NeverWrittenIsNeverFresh) {
@@ -98,4 +98,4 @@ TEST(AnomalySeen, FreshAndPastCooldownSucceeds) {
 }
 
 }  // namespace
-}  // namespace spar
+}  // namespace spar_ground

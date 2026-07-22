@@ -20,7 +20,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-namespace spar {
+namespace spar_ground {
 
 class BatterySim : public rclcpp::Node {
 public:
@@ -110,11 +110,11 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-}  // namespace spar
+}  // namespace spar_ground
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<spar::BatterySim>());
+  rclcpp::spin(std::make_shared<spar_ground::BatterySim>());
   rclcpp::shutdown();
   return 0;
 }

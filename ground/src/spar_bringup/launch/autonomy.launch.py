@@ -71,7 +71,7 @@ def generate_launch_description():
 
     def behavior_node(executable):
         return Node(
-            package="spar",
+            package="spar_ground",
             executable=executable,
             namespace=namespace,
             parameters=[autonomy_params, {"use_sim_time": True}],

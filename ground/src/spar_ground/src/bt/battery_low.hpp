@@ -5,7 +5,7 @@
 #include "bt/blackboard_keys.hpp"
 #include "bt/stamped.hpp"
 
-namespace spar {
+namespace spar_ground {
 
 // Condition node: SUCCESS when the robot should be heading for the dock.
 // A missing or stale battery reading counts as low, and once low the
@@ -45,4 +45,4 @@ private:
   bool latched_low_ = false;
 };
 
-}  // namespace spar
+}  // namespace spar_ground

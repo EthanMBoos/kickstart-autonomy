@@ -19,7 +19,7 @@ import mujoco
 import numpy as np
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_OUT = os.path.join(REPO, "src", "spar_bringup", "maps")
+DEFAULT_OUT = os.path.join(REPO, "ground", "src", "spar_bringup", "maps")
 
 RESOLUTION = 0.05
 MARGIN = 1.0

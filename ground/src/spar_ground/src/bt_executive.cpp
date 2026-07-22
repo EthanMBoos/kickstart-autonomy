@@ -16,7 +16,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <behaviortree_cpp/bt_factory.h>
-#include <spar/msg/detection.hpp>
+#include <spar_ground/msg/detection.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -31,7 +31,7 @@
 #include "bt/stamped.hpp"
 #include "leaves/navigate_leaf.hpp"
 
-namespace spar {
+namespace spar_ground {
 
 class BtExecutive : public rclcpp::Node {
 public:
@@ -64,7 +64,7 @@ public:
     // Overridable so a student can point at an alternate tree without a
     // rebuild; defaults to the one this package ships.
     declare_parameter("bt_xml_path",
-        ament_index_cpp::get_package_share_directory("spar") +
+        ament_index_cpp::get_package_share_directory("spar_ground") +
         "/behavior_trees/main_tree.xml");
   }
 
@@ -172,9 +172,9 @@ public:
     // hits labeled anomaly_label feed AnomalySeen, filtered here rather than
     // trusting everything that arrives.
     const auto anomaly_label = get_parameter("anomaly_label").as_string();
-    detections_sub_ = create_subscription<spar::msg::Detection>(
+    detections_sub_ = create_subscription<spar_ground::msg::Detection>(
         "perception/detections", 10,
-        [this, blackboard, anomaly_label](const spar::msg::Detection& msg) {
+        [this, blackboard, anomaly_label](const spar_ground::msg::Detection& msg) {
           if (msg.label != anomaly_label) return;
           blackboard->set<Stamped<geometry_msgs::msg::Point>>(
               keys::kAnomalyPoint, {msg.point, now().seconds()});
@@ -267,17 +267,17 @@ private:
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mission_sub_;
-  rclcpp::Subscription<spar::msg::Detection>::SharedPtr detections_sub_;
+  rclcpp::Subscription<spar_ground::msg::Detection>::SharedPtr detections_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-}  // namespace spar
+}  // namespace spar_ground
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
   try {
-    auto node = std::make_shared<spar::BtExecutive>();
+    auto node = std::make_shared<spar_ground::BtExecutive>();
     node->init();
     rclcpp::spin(node);
   } catch (const std::exception& e) {

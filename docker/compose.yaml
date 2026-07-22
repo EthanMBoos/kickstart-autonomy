@@ -47,10 +47,10 @@ services:
     # build/ + install/ are written by colcon in the container, run by hand
     # (see README); logs/ gets one runNNN per launch.
     volumes:
-      - ../src:/ws/src
+      - ../ground/src:/ws/src
       - ../scripts:/ws/scripts
-      - ../build:/ws/build
-      - ../install:/ws/install
+      - ../ground/build:/ws/build
+      - ../ground/install:/ws/install
       - ../logs:/ws/logs
     init: true # reaps zombies from `make rviz`'s Xvnc/rviz2/websockify trio;
                # PID 1 here is `sleep infinity`, which never reaps on its own

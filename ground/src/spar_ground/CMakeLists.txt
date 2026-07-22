@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 # C, not just CXX: rosidl_generate_interfaces below also builds a C typesupport.
-project(spar C CXX)
+project(spar_ground C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -133,7 +133,7 @@ them.
 
 ## Working on the autonomy code
 
-`src/spar/`:
+`ground/src/spar_ground/`:
 
 ```
 src/bt/                          BT.CPP node types: conditions, staleness helpers
@@ -146,13 +146,14 @@ test/                            gtest for the node types this repo owns
 ```
 
 Edit on your host; the workspace is bind-mounted, build artifacts land in
-`build/` and `install/` (symlinked, no separate install step). `colcon
+`ground/build/` and `ground/install/` (symlinked, no separate install
+step). `colcon
 build --symlink-install` (Quickstart) is for the first build; after that,
 rebuild faster straight through the generated Makefile, in your `make
 ros2_container` shell:
 
 ```bash
-cd build/spar && make
+cd build/spar_ground && make
 ```
 
 Plain `make` reruns cmake itself if needed. Colcon's build dir already
@@ -160,7 +161,7 @@ caches its own source path in `CMakeCache.txt`. Ctrl-C the launch and
 rerun it to pick up the change.
 
 Behavior parameters (waypoints, dock pose, battery thresholds, detector
-tuning): `src/spar_bringup/config/autonomy_<world>.yaml`. Nav2 (speed
+tuning): `ground/src/spar_bringup/config/autonomy_<world>.yaml`. Nav2 (speed
 limits, costmaps): `config/nav2.yaml`. Both are symlinked into the install
 tree, so edits take effect on the next launch, no rebuild needed.
 
@@ -179,7 +180,7 @@ dragged in.
 
 Two things travel with a world:
 
-- **Its map** (`src/spar_bringup/maps/<world>.*`). Regenerate after
+- **Its map** (`ground/src/spar_bringup/maps/<world>.*`). Regenerate after
   changing collision geometry:
 
   ```bash
@@ -198,16 +199,16 @@ Two things travel with a world:
 | Behavior status feed | `ros2 topic echo /husky/bt/status`, from a `make shell`; JSON: active leaf, mission, battery |
 | Live node logs | `make tail` (`/rosout`, every node merged), from a host terminal (fails if nothing is launched) |
 | rviz2 | `make rviz`, from a host terminal — opens a browser tab (noVNC); Ctrl-C stops it |
-| Rebuild after code edits | `cd build/spar && make` inside the shell (fast, after the first build above) |
+| Rebuild after code edits | `cd build/spar_ground && make` inside the shell (fast, after the first build above) |
 | End-to-end test | `make smoke` (needs Unity running and `autonomy.launch.py` up) |
 | Stop and remove the container | `make shut_down` |
 | Clean rebuild | `make clean` (shuts down, removes `build/` + `install/`), then `make ros2_container` |
 | Logs of past runs | `logs/runNNN/`, one per launch |
 | The Unity sim | `unity/SparSim`, scene `BlankWorld.unity`, sensors in `Assets/Scripts/SparRos/` |
 | Perception | camera renders in Unity (windowed or headless); the containerized detector turns pixels into labeled points on `perception/detections` |
-| Unity/ROS bridge | ROS-TCP endpoint on port 10000 (`src/ros_tcp_endpoint`, vendored) |
-| Behavior config | `src/spar_bringup/config/autonomy_<world>.yaml` |
-| Nav2 config | `src/spar_bringup/config/nav2.yaml` (speed: see `vx_max` comments) |
+| Unity/ROS bridge | ROS-TCP endpoint on port 10000 (`third_party/ros_tcp_endpoint`, vendored) |
+| Behavior config | `ground/src/spar_bringup/config/autonomy_<world>.yaml` |
+| Nav2 config | `ground/src/spar_bringup/config/nav2.yaml` (speed: see `vx_max` comments) |
 | The air stack | `air/src/spar_air` (BT + TF + detector), the `make *_air` targets |
 | Air behavior config | `air/src/spar_air/config/autonomy_<world>.yaml` |
 | PX4 pins and the topic mapping | `docker/Dockerfile.air`, `docker/air/{pub,sub}.csv` |

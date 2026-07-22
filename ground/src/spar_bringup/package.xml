@@ -13,7 +13,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>spar</exec_depend>
+  <exec_depend>spar_ground</exec_depend>
   <exec_depend>ros_tcp_endpoint</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
 

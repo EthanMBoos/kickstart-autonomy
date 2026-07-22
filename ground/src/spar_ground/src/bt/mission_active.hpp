@@ -4,7 +4,7 @@
 
 #include "bt/blackboard_keys.hpp"
 
-namespace spar {
+namespace spar_ground {
 
 // Condition node: SUCCESS while the mission layer has told the robot to
 // run. This is the seam between mission and behavior: the tree does
@@ -25,4 +25,4 @@ public:
   }
 };
 
-}  // namespace spar
+}  // namespace spar_ground

@@ -7,7 +7,7 @@
 #include "bt/blackboard_keys.hpp"
 #include "bt/stamped.hpp"
 
-namespace spar {
+namespace spar_ground {
 
 // Condition node: SUCCESS when perception has a fresh anomaly fix (older
 // than max_age_sec fails) and no inspection ended within the last
@@ -54,4 +54,4 @@ private:
   Params params_;
 };
 
-}  // namespace spar
+}  // namespace spar_ground

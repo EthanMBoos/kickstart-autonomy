@@ -7,7 +7,7 @@
 #
 #   make ros2_container    # build the image, start the container, drop you into a shell
 #   (in that shell) colcon build --symlink-install   # first build
-#   (in that shell) cd build/spar && make   # NOT cmake .. && make;
+#   (in that shell) cd build/spar_ground && make   # NOT cmake .. && make;
 #                    colcon's build dir caches its own source path, plain make is correct
 #   (in that shell) ros2 launch spar_bringup autonomy.launch.py world:=blank
 #                    logs go to logs/runNNN automatically (ROS_LOG_DIR is set
@@ -35,7 +35,7 @@ ROS_ENV   := source /ws/scripts/env.sh
 # a bare `docker compose up` can't start it by accident. shut_down/clean
 # always include the profile so they act on the whole project.
 TRACK ?= ground
-WORKDIRS := build install logs
+WORKDIRS := ground/build ground/install logs
 SMOKE    := /ws/scripts/smoke_test.sh
 ifeq ($(TRACK),air)
   COMPOSE   := $(COMPOSE) --profile air
@@ -68,7 +68,7 @@ shut_down:      ## stop and remove the containers
 	$(COMPOSE_ALL) down
 
 clean: shut_down ## shut down, then remove both tracks' build trees (forces a full rebuild on the next `make ros2_container`)
-	rm -rf build install air/build air/install
+	rm -rf ground/build ground/install air/build air/install
 
 unity-headless: ## run the sim headless (no editor window; make unity-stop ends it)
 	@mkdir -p logs
@@ -116,8 +116,8 @@ map: $(VENV)    ## regenerate the AMCL map from the Unity scene (dump MJCF -> li
 	  -executeMethod SparBootstrap.DumpWorld -logFile - \
 	  > logs/unity-dump.log 2>&1 || { tail -20 logs/unity-dump.log; exit 1; }
 	$(VENV)/bin/python scripts/lint_world.py logs/$(WORLD).xml \
-	  src/spar_bringup/config/autonomy_$(WORLD).yaml
-	$(VENV)/bin/python scripts/rasterize_map.py logs/$(WORLD).xml src/spar_bringup/maps
+	  ground/src/spar_bringup/config/autonomy_$(WORLD).yaml
+	$(VENV)/bin/python scripts/rasterize_map.py logs/$(WORLD).xml ground/src/spar_bringup/maps
 
 $(VENV):
 	python3 -m venv $(VENV) && $(VENV)/bin/pip install mujoco pyyaml

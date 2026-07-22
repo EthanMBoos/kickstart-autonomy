@@ -5,7 +5,7 @@
 #include "bt/blackboard_keys.hpp"
 #include "bt/stamped.hpp"
 
-namespace spar {
+namespace spar_ground {
 
 namespace {
 geometry_msgs::msg::PoseStamped make_pose(double x, double y, double yaw,
@@ -236,4 +236,4 @@ BT::NodeStatus HoldLeaf::onRunning() {
   return BT::NodeStatus::RUNNING;
 }
 
-}  // namespace spar
+}  // namespace spar_ground

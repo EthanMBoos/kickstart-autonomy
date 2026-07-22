@@ -20,7 +20,7 @@
 
 #include <cv_bridge/cv_bridge.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
-#include <spar/msg/detection.hpp>
+#include <spar_ground/msg/detection.hpp>
 #include <opencv2/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -29,7 +29,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-namespace spar {
+namespace spar_ground {
 
 class AnomalyDetector : public rclcpp::Node {
 public:
@@ -72,7 +72,7 @@ public:
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
-    detection_pub_ = create_publisher<spar::msg::Detection>(
+    detection_pub_ = create_publisher<spar_ground::msg::Detection>(
         "perception/detections", 10);
 
     info_sub_ = create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -163,7 +163,7 @@ private:
                            "anomaly seen but not localizable: %s", e.what());
       return;
     }
-    spar::msg::Detection detection;
+    spar_ground::msg::Detection detection;
     detection.header = in_map.header;
     detection.point = in_map.point;
     detection.label = label_;
@@ -216,17 +216,17 @@ private:
 
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
-  rclcpp::Publisher<spar::msg::Detection>::SharedPtr detection_pub_;
+  rclcpp::Publisher<spar_ground::msg::Detection>::SharedPtr detection_pub_;
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr info_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr color_sub_;
 };
 
-}  // namespace spar
+}  // namespace spar_ground
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<spar::AnomalyDetector>());
+  rclcpp::spin(std::make_shared<spar_ground::AnomalyDetector>());
   rclcpp::shutdown();
   return 0;
 }
