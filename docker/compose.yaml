@@ -1,14 +1,46 @@
 services:
-  autonomy:
+  # Infra only: the zenoh router and the ROS-TCP endpoint (scripts/core.sh).
+  # It owns the network namespace and every published port; the robot
+  # containers join it below.
+  core:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    image: spar:jazzy
+    container_name: spar-core
+    command: /ws/scripts/core.sh
+    # No logs mount on purpose: the entrypoint only claims a logs/runNNN
+    # dir when /ws/logs exists, and core has nothing worth a run dir.
+    volumes:
+      - ../scripts:/ws/scripts
+    # Every published port lives here; Docker forbids `ports:` on a service
+    # that joins another's network namespace.
+    ports:
+      - "10000:10000"         # ROS-TCP-Endpoint — the Unity sim connects here
+      - "127.0.0.1:6080:6080" # noVNC — loopback only, it's an unauthenticated
+                              # remote desktop (Xvnc -SecurityTypes None)
+      # No MAVLink HIL port: PX4's simulator_mavlink is the TCP client and
+      # dials the Unity-side listener at host.docker.internal:4560.
+      # DevNote: QGroundControl needs no port either: PX4 SENDS to the GCS
+      # (UDP 14550), so an inbound mapping would do nothing. Docker's NAT
+      # eats PX4's default broadcast; if QGC won't auto-connect, aim PX4's
+      # GCS mavlink stream at host.docker.internal (not yet verified).
+    init: true # core.sh backgrounds the router; something has to reap it
+    stop_grace_period: 10s
+
+  autonomy:
     image: spar:jazzy
     container_name: spar
     # Nothing launches automatically, see docker/entrypoint.sh. The
     # container just needs a long-lived foreground process to stay up for
     # `make ros2_container`/`make shell` to exec into; sleep infinity is that process.
     command: sleep infinity
+    # Joining core's network namespace makes the containers behave like
+    # processes on one machine: the router, the endpoint, and every node
+    # reach each other on localhost, and listeners started here (noVNC's
+    # 6080 from `make rviz`) are published by core.
+    network_mode: "service:core"
+    depends_on: [core]
     environment:
       - WORLD=${WORLD:-blank}
     # The workspace lives on the host; the image is just the environment.
@@ -20,11 +52,35 @@ services:
       - ../build:/ws/build
       - ../install:/ws/install
       - ../logs:/ws/logs
-    ports:
-      - "10000:10000"         # ROS-TCP-Endpoint — the Unity sim connects here
-      - "127.0.0.1:6080:6080" # noVNC — loopback only, it's an unauthenticated
-                              # remote desktop (Xvnc -SecurityTypes None)
     init: true # reaps zombies from `make rviz`'s Xvnc/rviz2/websockify trio;
                # PID 1 here is `sleep infinity`, which never reaps on its own
+    stop_grace_period: 10s
+    tty: true
+
+  air:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.air
+    image: spar-air:jazzy
+    container_name: spar-air
+    # The profile keeps a bare `docker compose up` from ever building PX4:
+    # only `--profile air` (added by the Makefile when TRACK=air) starts it.
+    profiles: ["air"]
+    command: sleep infinity
+    network_mode: "service:core"
+    depends_on: [core]
+    environment:
+      - WORLD=${WORLD:-blank}
+      - NS=/skydio  # scripts/env.sh default is the Husky; this is the drone
+    # Its own workspace mounts: the in-container workflow is the README
+    # workflow, and the ground container never sees px4_msgs. logs/air
+    # keeps run numbering from interleaving with the ground container's.
+    volumes:
+      - ../air/src:/ws/src
+      - ../scripts:/ws/scripts
+      - ../air/build:/ws/build
+      - ../air/install:/ws/install
+      - ../logs/air:/ws/logs
+    init: true
     stop_grace_period: 10s
     tty: true

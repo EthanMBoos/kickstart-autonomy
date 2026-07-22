@@ -22,11 +22,13 @@ reliability bar real users actually hold. This repo is that testground.
 Build scenarios, run regressions against the edge cases, and be able to
 say, with evidence, that a policy is good to go before it leaves sim.
 
-Today the concrete track is a ROS2 + Nav2 ground robot that makes
-inspection rounds of a site, inspects anomalies (a red drum) when
-perception spots them, and returns to its dock when the battery runs low.
-The substrate is built to span ground, air, and marine; a new domain is a
-swap of dynamics, sensors, and planner, not a fork.
+Today there are two concrete tracks in the same world. The ground track
+is a ROS2 + Nav2 Husky that makes inspection rounds of a site, inspects
+anomalies (a red drum) when perception spots them, and returns to its
+dock when the battery runs low. The air track is a PX4-flown Skydio X2
+that patrols overhead, orbits the same drum when its camera finds it, and
+returns to its pad on low battery ("The air track" below). The substrate
+spans domains by swapping dynamics, sensors, and planner, not by forking.
 
 Starter repo for the
 [GT Cloud Robotics](https://www.gtcloudrobotics.com/course-home/) Autonomy
@@ -86,6 +88,48 @@ make smoke     # end-to-end check (~4 min, ends in PASS)
 
 `make` lists every command. Each target is one or two lines in the
 [Makefile](Makefile).
+
+## The air track
+
+Everything above is the ground track and works unchanged. The air track
+is the same world flown by a different stack: PX4 SITL (the real
+autopilot: EKF2, position control, failsafes) in its own container, with
+a behavior tree above it speaking offboard setpoints. The `_air` make
+targets point at it; the first build compiles PX4 from source and takes
+a while.
+
+```bash
+make unity-gui
+make ros2_container_air
+colcon build --symlink-install     # in that shell: builds spar_air
+
+# start PX4, in that shell
+cd /opt/px4/build/px4_sitl_zenoh
+PX4_SYS_AUTOSTART=10016 PX4_SIM_MODEL=none_iris \
+  PX4_SIM_HOSTNAME=host.docker.internal ./bin/px4 -d > /tmp/px4.log 2>&1 &
+./bin/px4-zenoh start              # joins PX4 to the ROS graph
+
+ros2 launch spar_air air.launch.py world:=blank
+```
+
+Give EKF2 ~10 s to converge after PX4 starts, then the same mission
+controls as the ground robot, drone-flavored:
+
+```bash
+make shell_air
+scripts/mission.sh start
+ros2 topic echo /skydio/bt/status
+/opt/px4/build/px4_sitl_zenoh/bin/px4-param set SIM_BAT_MIN_PCT 10  # force low battery
+```
+
+`make smoke_air` runs the whole arc unattended (takeoff, inspect,
+patrol, battery return, land, disarm, relaunch). A mixed demo is both
+containers up and both missions started; nothing else to configure.
+
+One trap the two tracks share: if you restart Unity, restart the
+containers after it (`make shut_down`, bring both back up). Unity owns
+the clock, and both Nav2 and PX4 react badly to time rewinding under
+them.
 
 ## Working on the autonomy code
 
@@ -164,5 +208,8 @@ Two things travel with a world:
 | Unity/ROS bridge | ROS-TCP endpoint on port 10000 (`src/ros_tcp_endpoint`, vendored) |
 | Behavior config | `src/spar_bringup/config/autonomy_<world>.yaml` |
 | Nav2 config | `src/spar_bringup/config/nav2.yaml` (speed: see `vx_max` comments) |
+| The air stack | `air/src/spar_air` (BT + TF + detector), the `make *_air` targets |
+| Air behavior config | `air/src/spar_air/config/autonomy_<world>.yaml` |
+| PX4 pins and the topic mapping | `docker/Dockerfile.air`, `docker/air/{pub,sub}.csv` |
 | Why it's built this way | [docs/sim-architecture.md](docs/sim-architecture.md) |
 | Using the sim for RL | [docs/rl.md](docs/rl.md) |

@@ -1,0 +1,55 @@
+# Air behavior configuration for the blank world, the parallel of the
+# ground package's autonomy_blank.yaml. All positions are map frame (ENU).
+# The pad is the drone's spawn, which is also where EKF2's local origin
+# lands, so map = PX4 local ENU + pad; pad_x/pad_y here must match the X2
+# placement in the Unity scene, and both deconflict with the Husky: pad off
+# the patrol legs, cruise above the mast.
+# DevNote: the Husky's lidar still catches the drone crossing its scan
+# plane near the pad. That is a transient costmap obstacle Nav2 routes
+# around, accepted as is; it is not a deconfliction bug to fix here.
+/**/bt_executive:
+  ros__parameters:
+    tick_rate_hz: 10.0
+    # A diamond over the arena, first leg over the red drum at (5.6, 0.3)
+    # so a detection fires early in the arc.
+    waypoints_x: [5.5, 0.0, -5.0, 0.0]
+    waypoints_y: [0.0, -3.0, 0.0, 3.0]
+    pad_x: -2.0
+    pad_y: -1.0
+    cruise_alt_m: 4.0
+    aloft_alt_m: 1.5
+    accept_radius_m: 0.6
+    orbit_radius_m: 2.0
+    orbit_alt_m: 3.0
+    orbit_rate_rad_s: 0.4
+    # The BT decides first: PX4's own low-battery failsafe (COM_LOW_BAT_ACT)
+    # stays on its default warn-only level, below this 30% return threshold.
+    battery_low_percent: 30.0
+    battery_resume_percent: 90.0
+    battery_stale_sec: 2.0
+    anomaly_stale_sec: 6.0
+    inspect_cooldown_sec: 45.0
+    anomaly_label: anomaly
+
+/**/tf_from_px4:
+  ros__parameters:
+    pad_x: -2.0
+    pad_y: -1.0
+    map_frame: map
+    base_frame: base_link
+    camera_frame: camera_0_link
+    # Must match the Unity mount in SparPx4Link.cs.
+    camera_pitch_down_deg: 45.0
+
+/**/anomaly_detector:
+  ros__parameters:
+    color_topic: sensors/camera_0/color/image
+    depth_topic: sensors/camera_0/depth/image
+    info_topic: sensors/camera_0/color/camera_info
+    map_frame: map
+    camera_frame: camera_0_link
+    min_blob_area_px: 200
+    # Longer than the ground default 8.0 on purpose: the slant range from
+    # cruise altitude to the drum is what this has to cover.
+    max_range_m: 12.0
+    label: anomaly

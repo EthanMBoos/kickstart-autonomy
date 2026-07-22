@@ -98,10 +98,16 @@ ROS-TCP endpoint on :10000.
   behavior node ([rl.md](rl.md) has the full design).
 - Themed worlds and moving agents (asset-pack worlds, ML-Agents/NavMesh
   movers, per-world scene selection in the map pipeline).
-- Marine and air. A domain is three swaps, not a fork: dynamics (a force
-  module in the sim loop), sensors (the one C# layer), and planning (above
-  the topic boundary). The 2D lidar + map + AMCL are the ground domain's
-  module, not universal truth.
+- Marine. A domain is three swaps, not a fork: dynamics (a force module
+  in the sim loop), sensors (the one C# layer), and planning (above the
+  topic boundary). The 2D lidar + map + AMCL are the ground domain's
+  module, not universal truth. The air track proved the shape: its
+  dynamics is `SparPx4Link.cs` applying rotor forces in the sim loop, its
+  sensors are HIL messages computed from the same MjData, and its planner
+  is PX4 + a second BT in its own container (`air/src/spar_air`), joined
+  to the ground stack only through the shared zenoh graph. What the
+  build taught lives as comments next to the code that earned each
+  lesson, mostly the link and the air Dockerfile.
 
 The bring-up traps (name resolution after the plugin recompiles the scene,
 `tf_static` over ROS-TCP, the ignored MJCF timestep, and friends) are

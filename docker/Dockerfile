@@ -17,9 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # X server and the VNC server in one process, websockify/novnc bridge that
 # to a plain web page. See scripts/rviz.sh and `make rviz`.
 
-# Zenoh instead of DDS: discovery goes through a router over TCP (started by
-# the entrypoint), so none of the DDS-in-docker failure modes exist — no
-# multicast dependency, no participant-index ceiling, no wedged wait-sets.
+# Zenoh instead of DDS: discovery goes through a router over TCP (run by the
+# core service, scripts/core.sh), so none of the DDS-in-docker failure modes
+# exist — no multicast dependency, no participant-index ceiling, no wedged
+# wait-sets.
 # Both FastDDS and CycloneDDS were tried first and hit those in this setup.
 ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
 ENV ZENOH_ROUTER_CHECK_ATTEMPTS=10
@@ -42,6 +43,14 @@ RUN . /opt/ros/jazzy/setup.sh \
  && apt-get update && rosdep update --rosdistro jazzy \
  && rosdep install --from-paths src --ignore-src -y --rosdistro jazzy \
  && rm -rf /var/lib/apt/lists/*
+
+# The core service (see compose.yaml) runs the ROS-TCP endpoint before any
+# student build exists, so that one package is also baked into the image at
+# /opt/spar_core. The bind-mounted src/ros_tcp_endpoint still builds into
+# the student workspace like everything else; core just never uses that copy.
+COPY src/ros_tcp_endpoint /opt/spar_core/src/ros_tcp_endpoint
+RUN . /opt/ros/jazzy/setup.sh \
+ && cd /opt/spar_core && colcon build
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

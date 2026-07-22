@@ -1,5 +1,6 @@
-"""The whole robot stack: the bridge Unity connects to, localization (AMCL),
-Nav2, and the behavior layer (bt_executive + battery_sim + anomaly_detector).
+"""The whole robot stack: localization (AMCL), Nav2, and the behavior
+layer (bt_executive + battery_sim + anomaly_detector). The endpoint Unity
+connects to lives in the core container (scripts/core.sh), not here.
 
 One `ros2 launch` process, launched by hand from a `make ros2_container`/
 `make shell` session, see the Makefile and README. Ctrl-C and rerun it to
@@ -31,14 +32,6 @@ def generate_launch_description():
     autonomy_params = PathJoinSubstitution(
         [FindPackageShare("spar_bringup"), "config",
          ["autonomy_", world, ".yaml"]]
-    )
-
-    # The Unity bridge: the sim connects to this endpoint over TCP.
-    unity_endpoint = Node(
-        package="ros_tcp_endpoint",
-        executable="default_server_endpoint",
-        parameters=[{"ROS_IP": "0.0.0.0", "ROS_TCP_PORT": 10000}],
-        output="screen",
     )
 
     localization = GroupAction(
@@ -92,7 +85,6 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("namespace", default_value="husky"),
             DeclareLaunchArgument("world", default_value="blank"),
-            unity_endpoint,
             localization,
             nav2,
             behavior_node("battery_sim"),

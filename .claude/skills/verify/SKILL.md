@@ -23,9 +23,15 @@ covers the change, and always finish a session of edits with the checks in
 - Never commit. Leave everything in the working tree for the user.
 - IDE/clangd diagnostics on C++ files are noise on this machine (no ROS
   include paths on the host). The container build is the only authority.
-- Never run `make ros2_container` from here. It ends by exec-ing into an
-  interactive `docker exec -it` shell for a human to drive the robot stack
-  from by hand (that's the point of it); with no TTY attached, it hangs.
+- Never run `make ros2_container` or `make ros2_container_air` from
+  here. It ends by
+  exec-ing into an interactive `docker exec -it` shell for a human to
+  drive the robot stack from by hand (that's the point of it); with no
+  TTY attached, it hangs.
+- Never probe :10000 with a bare TCP connect (no `/dev/tcp`, no `nc`):
+  the ROS-TCP endpoint hands its send queue to the newest connection and
+  ROS -> Unity traffic dies silently. Check the listener passively via
+  `/proc/net/tcp` instead.
   Bring the container up with the raw `docker compose` command instead (see
   check 1), and bring up the robot stack with `docker exec -d ... ros2
   launch spar_bringup autonomy.launch.py` (see check 5). This is the
@@ -196,6 +202,53 @@ for a localization/bridge change, a costmap blob in the right place for a
 costmap tuning change, a new display actually rendering (not just listed)
 for an rviz config change.
 
+## The air track checks
+
+### A1. Air C++ build
+
+Required after any change under `air/src/`. Same shape as check 1, in the
+air container (start it with `--profile air`; a bare compose up never
+builds PX4):
+
+```bash
+mkdir -p air/src air/build air/install logs/air
+WORLD=blank docker compose -f docker/compose.yaml --profile air up --build -d
+docker exec spar-air bash -lc 'source /ws/scripts/env.sh && cd /ws && colcon --log-base /ws/build/log build --symlink-install'
+```
+
+Success is `Finished <<< spar_air`. The px4_msgs underlay is baked into
+the image; the workspace never builds it.
+
+### A2. Air smoke (full end to end)
+
+Required after changes to `SparPx4Link.cs`, `air/src/**`,
+`docker/Dockerfile.air`, the air compose service, or the air yaml; and
+after scene/prefab changes that touch the drone or the pad. Order is
+load-bearing exactly like check 5: Unity FIRST, then containers, then PX4,
+then the launch. PX4 must start after Unity is listening (its
+simulator_mavlink dials out to Unity's :4560 and the sim clock must not
+rewind under it).
+
+```bash
+make unity-stop && make unity-headless
+# wait for "px4 link ids ok" (and "bridge ids ok") in logs/unity-headless.log
+make shut_down
+mkdir -p build install logs air/src air/build air/install logs/air
+WORLD=blank docker compose -f docker/compose.yaml --profile air up --build -d
+docker exec spar-air bash -lc 'source /ws/scripts/env.sh && cd /ws && colcon --log-base /ws/build/log build --symlink-install'
+docker exec -d spar-air bash -c 'cd /opt/px4/build/px4_sitl_zenoh && PX4_SYS_AUTOSTART=10016 PX4_SIM_MODEL=none_iris PX4_SIM_HOSTNAME=host.docker.internal ./bin/px4 -d > /tmp/px4.log 2>&1'
+# wait for "px4 lockstep engaged" in logs/unity-headless.log, then:
+docker exec spar-air bash -c 'cd /opt/px4/build/px4_sitl_zenoh && ./bin/px4-zenoh start'
+docker exec -d spar-air bash -lc 'source /ws/scripts/env.sh && ros2 launch spar_air air.launch.py world:=blank'
+make smoke_air         # ~4-6 min; phase 1 alone waits out PX4 boot + EKF2
+make unity-stop
+```
+
+Success is the final `[smoke] PASS: idle -> start -> takeoff -> ...`
+line. The smoke's phase 1 timeout is generous on purpose: a type-hash or
+zenoh-protocol drift in the three Dockerfile.air pins shows up here as
+phase 1 timing out with the topics still listed.
+
 ## Physics experiments in the scratchpad
 
 The repo venv has mujoco (`.venv/bin/python`). To test a hypothesis about
@@ -230,6 +283,10 @@ scripts, and keep the world as the regression check after.
 | lint_world / rasterize_map | 4 (byte-identical on blank) + a scratchpad probe world |
 | autonomy.launch.py / nav2.yaml / localization.yaml / autonomy_\<world\>.yaml / compose.yaml / entrypoint.sh / scripts/*.sh | 5 (its bring-up always tears down and starts the whole stack fresh, so this covers any of these; configs are symlinked, no rebuild needed for yaml-only changes) |
 | scripts/rviz.sh / spar.rviz | 6 (needs 5's stack up first) |
+| SparPx4Link.cs | 3, then A2 |
+| air/src/** (spar_air) | A1, then A2 if behavior changed |
+| Dockerfile.air / air compose service / air yaml / core.sh / smoke_test_air.sh | A2 |
+| Scene or prefab changes touching the drone or the pad | 3, 4 (byte-identical bar: the freejoint drone and the visual-only pad must not move the map), 5, A2 |
 | Docs / comments only | none, but grep that referenced files/names still exist |
 
 A full sign-off pass is 1 through 5 in order. Report results plainly: what

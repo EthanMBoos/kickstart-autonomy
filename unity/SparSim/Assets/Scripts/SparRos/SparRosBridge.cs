@@ -124,14 +124,14 @@ public class SparRosBridge : MonoBehaviour {
     _scene.ctrlCallback += (_, args) => ApplyCmd(args);
   }
 
-  static T FindComponent<T>(string name) where T : MjComponent {
+  internal static T FindComponent<T>(string name) where T : MjComponent {
     foreach (var c in UnityEngine.Object.FindObjectsByType<T>(FindObjectsSortMode.None)) {
       if (c.name == name) return c;
     }
     return null;
   }
 
-  static int FindId<T>(string name) where T : MjComponent {
+  internal static int FindId<T>(string name) where T : MjComponent {
     var c = FindComponent<T>(name);
     return c != null ? c.MujocoId : -1;
   }

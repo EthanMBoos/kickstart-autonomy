@@ -1,0 +1,39 @@
+<!--
+The air mission, mirroring the ground tree's shape: reactive composites
+everywhere so higher-priority branches preempt lower ones on any tick.
+Priorities, top to bottom: battery bail-out beats inspecting beats
+patrolling; no mission means Idle (which freezes the drone where it is,
+the offboard stream keeps the last setpoint alive).
+
+The one non-reactive composite: go_home is a SequenceWithMemory because
+Land descends AWAY from the return altitude, and a reactive re-tick of
+ReturnToPad would read that descent as "not home yet" and climb right
+back to cruise.
+-->
+<root BTCPP_format="4">
+  <BehaviorTree ID="MainTree">
+    <ReactiveFallback name="root">
+      <ReactiveSequence name="mission_gate">
+        <MissionActive/>
+        <ReactiveFallback name="behaviors">
+          <ReactiveSequence name="battery_bail">
+            <BatteryLow/>
+            <SequenceWithMemory name="go_home">
+              <ReturnToPad/>
+              <Land/>
+            </SequenceWithMemory>
+          </ReactiveSequence>
+          <ReactiveSequence name="inspect">
+            <AnomalySeen/>
+            <InspectAnomaly/>
+          </ReactiveSequence>
+          <ReactiveSequence name="patrol">
+            <TakeOff/>
+            <GotoWaypoint/>
+          </ReactiveSequence>
+        </ReactiveFallback>
+      </ReactiveSequence>
+      <Idle/>
+    </ReactiveFallback>
+  </BehaviorTree>
+</root>

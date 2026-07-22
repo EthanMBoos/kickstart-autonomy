@@ -1,0 +1,66 @@
+FROM ros:jazzy
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Three version pins that travel together. rmw_zenoh key expressions embed
+# the message type hash, so a PX4/px4_msgs mismatch fails silently: topics
+# list but never deliver. And PX4's zenoh-pico must speak the same zenoh
+# protocol as the apt-packaged router in the core container (zenoh pre-1.0
+# and 1.x do not interoperate); if apt drifts, pin ros-jazzy-rmw-zenoh-cpp
+# here AND in docker/Dockerfile to the same version.
+ARG PX4_TAG=v1.17.0
+ARG PX4_MSGS_REF=release/1.17
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ros-jazzy-rmw-zenoh-cpp \
+      git \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ENV ZENOH_ROUTER_CHECK_ATTEMPTS=10
+
+# PX4 is a large pinned source build and stays out of the ground image on
+# purpose. --shallow-submodules keeps the clone tolerable; ubuntu.sh
+# installs PX4's own build deps (no NuttX toolchain, no Gazebo).
+RUN git clone --branch ${PX4_TAG} --depth 1 --recurse-submodules --shallow-submodules \
+      https://github.com/PX4/PX4-Autopilot.git /opt/px4 \
+ && apt-get update \
+ && /opt/px4/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools \
+ && rm -rf /var/lib/apt/lists/*
+RUN cd /opt/px4 && make px4_sitl_zenoh
+
+# The zenoh topic mapping is the one experimental surface: docker/air/
+# {pub,sub}.csv, format <ros_topic>;<uorb_topic>;<instance>, which is how
+# the drone lands under /skydio in the shared graph. They are the v1.17
+# auto-generated defaults with the namespace prefixed, so they move with
+# PX4_TAG. PX4 writes defaults here only when no file exists, so the
+# baked copies win.
+# DevNote: the zenoh module is gated by ZENOH_ENABLE and SITL boots with
+# it OFF, which is why every start sequence (README, smoke) runs
+# `px4-zenoh start` explicitly after PX4 is up.
+COPY docker/air/pub.csv docker/air/sub.csv /opt/px4/build/px4_sitl_zenoh/rootfs/zenoh/
+
+# px4_msgs is baked as an underlay, never compiled in the student
+# workspace: the air/src tree stays student code only.
+RUN git clone --branch ${PX4_MSGS_REF} --depth 1 \
+      https://github.com/PX4/px4_msgs.git /opt/px4_msgs/src/px4_msgs
+RUN . /opt/ros/jazzy/setup.sh \
+ && cd /opt/px4_msgs && colcon build
+
+WORKDIR /ws
+
+# Same pattern as the ground image: only the manifest is copied in, just
+# enough for rosdep; the real source is bind-mounted at runtime. px4_msgs
+# is skipped because it is the baked underlay above, not an apt package.
+COPY air/src/spar_air/package.xml src/spar_air/
+RUN . /opt/ros/jazzy/setup.sh \
+ && apt-get update && rosdep update --rosdistro jazzy \
+ && rosdep install --from-paths src --ignore-src -y --rosdistro jazzy \
+      --skip-keys px4_msgs \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["sleep", "infinity"]

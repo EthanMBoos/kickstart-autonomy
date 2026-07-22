@@ -9,11 +9,11 @@ source /opt/ros/jazzy/setup.bash
 # step you run yourself in the shell this drops you into. install/ may not
 # exist yet the first time.
 
-# Nothing ROS-related launches here on purpose. The whole stack (bridge,
-# localization, Nav2, behavior, see autonomy.launch.py) is meant to be run
+# Nothing ROS-related launches here on purpose. The whole stack
+# (localization, Nav2, behavior, see autonomy.launch.py) is meant to be run
 # by hand, in a `make shell`, so a launch/param/bridge change is something
-# you watch happen, not something a script hides.
-/ws/scripts/ensure_zenoh_router.sh
+# you watch happen, not something a script hides. The infra (zenoh router,
+# ROS-TCP endpoint) belongs to the core service, see scripts/core.sh.
 
 # ROS_LOG_DIR is set once per container start, in a profile.d script so it
 # reaches every later `docker exec ... bash -lc` shell (make shell, make
